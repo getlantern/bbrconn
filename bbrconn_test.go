@@ -19,7 +19,7 @@ func BenchmarkInfo(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		_, err := bc.Info()
+		_, _, err := bc.Info()
 		if err != nil {
 			b.Fatal(err)
 		}

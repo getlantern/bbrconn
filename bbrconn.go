@@ -5,6 +5,7 @@ package bbrconn
 
 import (
 	"net"
+	"sync/atomic"
 
 	"github.com/getlantern/tcpinfo"
 	"github.com/mikioh/tcp"
@@ -12,10 +13,24 @@ import (
 
 type Conn interface {
 	net.Conn
-	Info() (*tcpinfo.BBRInfo, error)
+	Info() (bytesWritten int, info *tcpinfo.BBRInfo, err error)
 }
 
 type bbrconn struct {
 	net.Conn
-	tconn *tcp.Conn
+	tconn        *tcp.Conn
+	bytesWritten uint64
+}
+
+func (c *bbrconn) Write(b []byte) (int, error) {
+	n, err := c.Conn.Write(b)
+	if n > 0 {
+		atomic.AddUint64(&c.bytesWritten, uint64(n))
+	}
+	return n, err
+}
+
+// Wrapped implements the interface netx.Wrapped
+func (c *bbrconn) Wrapped() net.Conn {
+	return c.Conn
 }
