@@ -27,9 +27,9 @@ func Wrap(conn net.Conn) (Conn, error) {
 		return nil, fmt.Errorf("Could not find a net.TCPConn from connection of type %v", reflect.TypeOf(conn))
 	}
 
-	tconn, err := tcp.NewConn(conn)
+	tconn, err := tcp.NewConn(tcpConn)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Unable to wrap TCP conn: %v", err)
 	}
 	return &bbrconn{Conn: conn, tconn: tconn}, nil
 }
