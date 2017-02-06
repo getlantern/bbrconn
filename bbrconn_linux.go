@@ -3,14 +3,30 @@
 package bbrconn
 
 import (
+	"fmt"
 	"net"
+	"reflect"
 	"sync/atomic"
 
+	"github.com/getlantern/netx"
 	"github.com/getlantern/tcpinfo"
 	"github.com/mikioh/tcp"
 )
 
 func Wrap(conn net.Conn) (Conn, error) {
+	var tcpConn net.Conn
+	netx.WalkWrapped(conn, func(candidate net.Conn) bool {
+		switch t := candidate.(type) {
+		case *net.TCPConn:
+			tcpConn = t
+			return false
+		}
+		return true
+	})
+	if tcpConn == nil {
+		return nil, fmt.Errorf("Could not find a net.TCPConn from connection of type %v", reflect.TypeOf(conn))
+	}
+
 	tconn, err := tcp.NewConn(conn)
 	if err != nil {
 		return nil, err
