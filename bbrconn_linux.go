@@ -13,7 +13,11 @@ import (
 	"github.com/mikioh/tcp"
 )
 
-func Wrap(conn net.Conn) (Conn, error) {
+func Wrap(conn net.Conn, onClose InfoCallback) (Conn, error) {
+	if onClose == nil {
+		onClose = func(bytesWritten int, info *tcpinfo.BBRInfo, err error) {
+		}
+	}
 	var tcpConn net.Conn
 	netx.WalkWrapped(conn, func(candidate net.Conn) bool {
 		switch t := candidate.(type) {
@@ -31,7 +35,7 @@ func Wrap(conn net.Conn) (Conn, error) {
 	if err != nil {
 		return nil, fmt.Errorf("Unable to wrap TCP conn: %v", err)
 	}
-	return &bbrconn{Conn: conn, tconn: tconn}, nil
+	return &bbrconn{Conn: conn, tconn: tconn, onClose: onClose}, nil
 }
 
 func (conn *bbrconn) Info() (int, *tcpinfo.BBRInfo, error) {
@@ -46,4 +50,9 @@ func (conn *bbrconn) Info() (int, *tcpinfo.BBRInfo, error) {
 		return 0, nil, err
 	}
 	return int(atomic.LoadUint64(&conn.bytesWritten)), ai.(*tcpinfo.BBRInfo), nil
+}
+
+func (conn *bbrconn) Close() error {
+	conn.onClose(conn.Info())
+	return conn.Conn.Close()
 }

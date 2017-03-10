@@ -12,7 +12,7 @@ func BenchmarkInfo(b *testing.B) {
 	}
 	defer conn.Close()
 
-	bc, err := Wrap(conn)
+	bc, err := Wrap(conn, nil)
 	if err != nil {
 		b.Fatal(err)
 	}
