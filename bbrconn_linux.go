@@ -40,7 +40,7 @@ func Wrap(conn net.Conn, onClose InfoCallback) (Conn, error) {
 
 func (conn *bbrconn) Info() (int, *tcpinfo.BBRInfo, error) {
 	var o tcpinfo.CCInfo
-	b := make([]byte, 16)
+	b := make([]byte, 100)
 	i, err := conn.tconn.Option(o.Level(), o.Name(), b)
 	if err != nil {
 		return 0, nil, err
