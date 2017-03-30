@@ -11,6 +11,8 @@ import (
 	"github.com/mikioh/tcp"
 )
 
+type InfoCallback func(bytesWritten int, info *tcpinfo.BBRInfo, err error)
+
 type Conn interface {
 	net.Conn
 	Info() (bytesWritten int, info *tcpinfo.BBRInfo, err error)
@@ -20,6 +22,7 @@ type bbrconn struct {
 	net.Conn
 	tconn        *tcp.Conn
 	bytesWritten uint64
+	onClose      InfoCallback
 }
 
 func (c *bbrconn) Write(b []byte) (int, error) {
