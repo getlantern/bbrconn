@@ -11,11 +11,19 @@ import (
 	"github.com/mikioh/tcp"
 )
 
-type InfoCallback func(bytesWritten int, info *tcpinfo.BBRInfo, err error)
+type InfoCallback func(bytesWritten int, info *tcpinfo.Info, bbrInfo *tcpinfo.BBRInfo, err error)
 
 type Conn interface {
 	net.Conn
-	Info() (bytesWritten int, info *tcpinfo.BBRInfo, err error)
+
+	// BytesWritten returns the number of bytes written to this connection
+	BytesWritten() int
+
+	// TCPInfo returns TCP connection info from the kernel
+	TCPInfo() (*tcpinfo.Info, error)
+
+	// BBRInfo returns BBR congestion avoidance info from the kernel
+	BBRInfo() (*tcpinfo.BBRInfo, error)
 }
 
 type bbrconn struct {
