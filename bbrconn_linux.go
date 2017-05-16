@@ -44,7 +44,7 @@ func (conn *bbrconn) BytesWritten() int {
 
 func (conn *bbrconn) TCPInfo() (*tcpinfo.Info, error) {
 	var o tcpinfo.Info
-	b := make([]byte, 10000)
+	b := make([]byte, o.Size())
 	i, err := conn.tconn.Option(o.Level(), o.Name(), b)
 	if err != nil {
 		return nil, err
@@ -53,8 +53,9 @@ func (conn *bbrconn) TCPInfo() (*tcpinfo.Info, error) {
 }
 
 func (conn *bbrconn) BBRInfo() (*tcpinfo.BBRInfo, error) {
+	var bo tcpinfo.BBRInfo
 	var o tcpinfo.CCInfo
-	b := make([]byte, 100)
+	b := make([]byte, bo.Size())
 	i, err := conn.tconn.Option(o.Level(), o.Name(), b)
 	if err != nil {
 		return nil, err
