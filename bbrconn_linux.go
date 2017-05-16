@@ -15,7 +15,7 @@ import (
 
 func Wrap(conn net.Conn, onClose InfoCallback) (Conn, error) {
 	if onClose == nil {
-		onClose = func(bytesWritten int, info *tcpinfo.BBRInfo, err error) {
+		onClose = func(bytesWritten int, info *tcpinfo.Info, bbrInfo *tcpinfo.BBRInfo, err error) {
 		}
 	}
 	var tcpConn net.Conn
@@ -38,21 +38,42 @@ func Wrap(conn net.Conn, onClose InfoCallback) (Conn, error) {
 	return &bbrconn{Conn: conn, tconn: tconn, onClose: onClose}, nil
 }
 
-func (conn *bbrconn) Info() (int, *tcpinfo.BBRInfo, error) {
+func (conn *bbrconn) BytesWritten() int {
+	return int(atomic.LoadUint64(&conn.bytesWritten))
+}
+
+func (conn *bbrconn) TCPInfo() (*tcpinfo.Info, error) {
+	var o tcpinfo.Info
+	b := make([]byte, 10000)
+	i, err := conn.tconn.Option(o.Level(), o.Name(), b)
+	if err != nil {
+		return nil, err
+	}
+	return i.(*tcpinfo.Info), nil
+}
+
+func (conn *bbrconn) BBRInfo() (*tcpinfo.BBRInfo, error) {
 	var o tcpinfo.CCInfo
 	b := make([]byte, 100)
 	i, err := conn.tconn.Option(o.Level(), o.Name(), b)
 	if err != nil {
-		return 0, nil, err
+		return nil, err
 	}
 	ai, err := tcpinfo.ParseCCAlgorithmInfo("bbr", i.(*tcpinfo.CCInfo).Raw)
 	if err != nil {
-		return 0, nil, err
+		return nil, err
 	}
-	return int(atomic.LoadUint64(&conn.bytesWritten)), ai.(*tcpinfo.BBRInfo), nil
+	return ai.(*tcpinfo.BBRInfo), nil
 }
 
 func (conn *bbrconn) Close() error {
-	conn.onClose(conn.Info())
+	bytesWritten := conn.BytesWritten()
+	info, err1 := conn.TCPInfo()
+	bbrInfo, err2 := conn.BBRInfo()
+	err := err1
+	if err == nil {
+		err = err2
+	}
+	conn.onClose(bytesWritten, info, bbrInfo, err)
 	return conn.Conn.Close()
 }
