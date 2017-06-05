@@ -60,7 +60,10 @@ func (conn *bbrconn) BBRInfo() (*tcpinfo.BBRInfo, error) {
 	if err != nil {
 		return nil, err
 	}
-	ai, err := tcpinfo.ParseCCAlgorithmInfo("bbr", i.(*tcpinfo.CCInfo).Raw)
+	ccInfo := i.(*tcpinfo.CCInfo)
+	raw := make([]byte, len(ccInfo.Raw))
+	copy(raw, ccInfo.Raw)
+	ai, err := tcpinfo.ParseCCAlgorithmInfo("bbr", raw)
 	if err != nil {
 		return nil, err
 	}
