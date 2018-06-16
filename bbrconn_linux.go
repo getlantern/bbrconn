@@ -9,8 +9,13 @@ import (
 	"sync/atomic"
 
 	"github.com/getlantern/netx"
-	"github.com/getlantern/tcpinfo"
 	"github.com/mikioh/tcp"
+	"github.com/mikioh/tcpinfo"
+)
+
+const (
+	sizeOfTCPInfo    = 0xc0
+	sizeOfTCPBBRInfo = 0x14
 )
 
 func Wrap(conn net.Conn, onClose InfoCallback) (Conn, error) {
@@ -44,7 +49,7 @@ func (conn *bbrconn) BytesWritten() int {
 
 func (conn *bbrconn) TCPInfo() (*tcpinfo.Info, error) {
 	var o tcpinfo.Info
-	b := make([]byte, o.Size())
+	b := make([]byte, sizeOfTCPInfo)
 	i, err := conn.tconn.Option(o.Level(), o.Name(), b)
 	if err != nil {
 		return nil, err
@@ -53,9 +58,8 @@ func (conn *bbrconn) TCPInfo() (*tcpinfo.Info, error) {
 }
 
 func (conn *bbrconn) BBRInfo() (*tcpinfo.BBRInfo, error) {
-	var bo tcpinfo.BBRInfo
 	var o tcpinfo.CCInfo
-	b := make([]byte, bo.Size())
+	b := make([]byte, sizeOfTCPBBRInfo)
 	i, err := conn.tconn.Option(o.Level(), o.Name(), b)
 	if err != nil {
 		return nil, err
