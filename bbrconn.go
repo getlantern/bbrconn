@@ -7,8 +7,8 @@ import (
 	"net"
 	"sync/atomic"
 
-	"github.com/getlantern/tcpinfo"
 	"github.com/mikioh/tcp"
+	"github.com/mikioh/tcpinfo"
 )
 
 type InfoCallback func(bytesWritten int, info *tcpinfo.Info, bbrInfo *tcpinfo.BBRInfo, err error)
