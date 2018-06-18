@@ -14,8 +14,8 @@ import (
 )
 
 const (
-	sizeOfTCPInfo    = 0xc0
-	sizeOfTCPBBRInfo = 0x14
+	sizeOfTCPInfo    = 0xc0 // taken from github.com/mikioh/tcpinfo/syslinux.go
+	sizeOfTCPBBRInfo = 0x14 // taken from github.com/mikioh/tcpinfo/syslinux.go
 )
 
 func Wrap(conn net.Conn, onClose InfoCallback) (Conn, error) {
