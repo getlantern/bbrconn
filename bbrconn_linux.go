@@ -18,9 +18,29 @@ const (
 	sizeOfTCPBBRInfo = 0x14 // taken from github.com/mikioh/tcpinfo/syslinux.go
 )
 
+type bbrconn struct {
+	net.Conn
+	tconn        *tcp.Conn
+	bytesWritten uint64
+	onClose      InfoCallback
+}
+
+func (c *bbrconn) Write(b []byte) (int, error) {
+	n, err := c.Conn.Write(b)
+	if n > 0 {
+		atomic.AddUint64(&c.bytesWritten, uint64(n))
+	}
+	return n, err
+}
+
+// Wrapped implements the interface netx.Wrapped
+func (c *bbrconn) Wrapped() net.Conn {
+	return c.Conn
+}
+
 func Wrap(conn net.Conn, onClose InfoCallback) (Conn, error) {
 	if onClose == nil {
-		onClose = func(bytesWritten int, info *tcpinfo.Info, bbrInfo *tcpinfo.BBRInfo, err error) {
+		onClose = func(bytesWritten int, info *TCPInfo, bbrInfo *BBRInfo, err error) {
 		}
 	}
 	var tcpConn net.Conn
@@ -47,17 +67,23 @@ func (conn *bbrconn) BytesWritten() int {
 	return int(atomic.LoadUint64(&conn.bytesWritten))
 }
 
-func (conn *bbrconn) TCPInfo() (*tcpinfo.Info, error) {
+func (conn *bbrconn) TCPInfo() (*TCPInfo, error) {
 	var o tcpinfo.Info
 	b := make([]byte, sizeOfTCPInfo)
 	i, err := conn.tconn.Option(o.Level(), o.Name(), b)
 	if err != nil {
 		return nil, err
 	}
-	return i.(*tcpinfo.Info), nil
+	info := i.(*tcpinfo.Info)
+	return &TCPInfo{
+		SenderMSS:           uint(info.SenderMSS),
+		RTT:                 info.RTT,
+		SysSegsOut:          info.Sys.SegsOut,
+		SysTotalRetransSegs: info.Sys.TotalRetransSegs,
+	}, nil
 }
 
-func (conn *bbrconn) BBRInfo() (*tcpinfo.BBRInfo, error) {
+func (conn *bbrconn) BBRInfo() (*BBRInfo, error) {
 	var o tcpinfo.CCInfo
 	b := make([]byte, sizeOfTCPBBRInfo)
 	i, err := conn.tconn.Option(o.Level(), o.Name(), b)
@@ -68,7 +94,10 @@ func (conn *bbrconn) BBRInfo() (*tcpinfo.BBRInfo, error) {
 	if err != nil {
 		return nil, err
 	}
-	return ai.(*tcpinfo.BBRInfo), nil
+	bi := ai.(*tcpinfo.BBRInfo)
+	return &BBRInfo{
+		MaxBW: bi.MaxBW,
+	}, nil
 }
 
 func (conn *bbrconn) Close() error {

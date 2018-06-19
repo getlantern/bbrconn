@@ -57,8 +57,8 @@ func TestConcurrency(t *testing.T) {
 					t.Fatal(err)
 				}
 				assert.True(t, info.SenderMSS > 0)
-				assert.True(t, info.Sys.SegsOut > 0)
-				assert.True(t, info.Sys.SegsOut > info.Sys.TotalRetransSegs)
+				assert.True(t, info.SysSegsOut > 0)
+				assert.True(t, info.SysSegsOut > info.SysTotalRetransSegs)
 			}
 		}
 		result <- sent

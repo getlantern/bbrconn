@@ -5,13 +5,10 @@ package bbrconn
 
 import (
 	"net"
-	"sync/atomic"
-
-	"github.com/mikioh/tcp"
-	"github.com/mikioh/tcpinfo"
+	"time"
 )
 
-type InfoCallback func(bytesWritten int, info *tcpinfo.Info, bbrInfo *tcpinfo.BBRInfo, err error)
+type InfoCallback func(bytesWritten int, info *TCPInfo, bbrInfo *BBRInfo, err error)
 
 type Conn interface {
 	net.Conn
@@ -20,28 +17,20 @@ type Conn interface {
 	BytesWritten() int
 
 	// TCPInfo returns TCP connection info from the kernel
-	TCPInfo() (*tcpinfo.Info, error)
+	TCPInfo() (*TCPInfo, error)
 
 	// BBRInfo returns BBR congestion avoidance info from the kernel
-	BBRInfo() (*tcpinfo.BBRInfo, error)
+	BBRInfo() (*BBRInfo, error)
 }
 
-type bbrconn struct {
-	net.Conn
-	tconn        *tcp.Conn
-	bytesWritten uint64
-	onClose      InfoCallback
+type TCPInfo struct {
+	SenderMSS           uint
+	RTT                 time.Duration
+	SysSegsOut          uint
+	SysTotalRetransSegs uint
 }
 
-func (c *bbrconn) Write(b []byte) (int, error) {
-	n, err := c.Conn.Write(b)
-	if n > 0 {
-		atomic.AddUint64(&c.bytesWritten, uint64(n))
-	}
-	return n, err
-}
-
-// Wrapped implements the interface netx.Wrapped
-func (c *bbrconn) Wrapped() net.Conn {
-	return c.Conn
+type BBRInfo struct {
+	// MaxBW is the maximum bottleneck bandwidth in bits per seconds (bps)
+	MaxBW uint64
 }
